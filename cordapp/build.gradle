@@ -1,0 +1,27 @@
+repositories {
+    jcenter()
+    mavenCentral()
+    maven {
+        name = 'Clojars'
+        url = 'https://repo.clojars.org/'
+    }
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://ci-artifactory.corda.r3cev.com/artifactory/corda-releases' }
+}
+
+apply plugin: "gradle-clojure.clojure"
+apply plugin: 'net.corda.plugins.cordapp'
+apply from: '../commons.gradle'
+
+clojure {
+    builds {
+        // Defaults noted here are for custom builds, the convention plugin configures the builds it adds differently
+        main {
+            aotAll() // aots any namespaces found in the source set
+        }
+    }
+}
+
+dependencies {
+    compile 'org.clojure:clojure:1.9.0'
+}

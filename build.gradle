@@ -1,0 +1,84 @@
+buildscript {
+    ext.clojure_version = "1.9.0"
+    ext.clojure_plugin_version = "0.4.0"
+    ext.corda_release_group = 'net.corda'
+    ext.corda_release_version = '3.2-corda'
+    ext.corda_gradle_plugins_version = '3.1.0'
+    ext.junit_version = '4.12'
+    ext.quasar_version = '0.7.9'
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = 'Clojars'
+            url = 'https://repo.clojars.org/'
+        }
+        jcenter()
+    }
+
+    dependencies {
+        classpath "gradle-clojure.clojure:gradle-clojure.clojure.gradle.plugin:$clojure_plugin_version"
+        classpath "net.corda.plugins:cordapp:$corda_gradle_plugins_version"
+        classpath "net.corda.plugins:cordformation:$corda_gradle_plugins_version"
+        classpath "net.corda.plugins:quasar-utils:$corda_gradle_plugins_version"
+    }
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://ci-artifactory.corda.r3cev.com/artifactory/corda-releases' }
+}
+
+apply plugin: 'gradle-clojure.clojure'
+apply plugin: 'net.corda.plugins.cordapp'
+apply plugin: 'net.corda.plugins.cordformation'
+apply plugin: 'net.corda.plugins.quasar-utils'
+apply from: 'commons.gradle'
+
+dependencies {
+    cordaCompile "$corda_release_group:corda-node-api:$corda_release_version"
+    cordapp project(':cordapp')
+//    cordapp project(':commons')
+    // {{ROLE_CORDAPP}}
+}
+
+task deployNodes(type: net.corda.plugins.Cordform, dependsOn: ['jar']) {
+    directory "./build/nodes"
+    node {
+        name "O=Notary,L=London,C=GB"
+        notary = [validating: true]
+        p2pPort 9997
+        rpcSettings {
+            address("localhost:9998")
+            adminAddress("localhost:9999")
+        }
+        cordapps = ["$project.group:cordapp:$project.version"]
+    }
+    node {
+        name "O=Test,L=London,C=GB"
+        notary = [validating: true]
+        p2pPort 10000
+        rpcSettings {
+            address("localhost:10001")
+            adminAddress("localhost:10002")
+        }
+        cordapps = ["$project.group:cordapp:$project.version"]
+    }
+    // {{ROLE_NODE}}
+}
+
+task deployWebapps(type: Copy, dependsOn: [
+        // {{web_app}}
+]) {
+    ext.webappDir = file("build/webapps")
+    // this should be for each webmodule
+    // {{web_copy}}}}}
+    from("src/main/resources/scripts/") {
+        filter {
+            it.replace('#DIR#', ext.webappDir.getAbsolutePath())
+        }
+    }
+    into ext.webappDir
+}
